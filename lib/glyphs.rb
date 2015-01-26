@@ -100,6 +100,18 @@ class Glyph
     @flashing
   end
 
+  def font
+    if self.bold? && self.italic?
+      return :bold_italic
+    elsif self.bold? 
+      return :bold
+    elsif self.italic?
+      return :italic
+    else
+      return :default
+    end
+  end
+
   def swap_colors
     # If the glyph is flashing this will swap the colors
     @color = Color.new(@color.background, @color.foreground)
@@ -131,6 +143,9 @@ class Glyph
         @bold = true
       when :italic
         @italic = true
+      when :bold_italic
+          @bold = true
+          @italic = true
       when :dim
         @dim = true
       else

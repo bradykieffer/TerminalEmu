@@ -98,5 +98,4 @@ test_colors(window)
 test_sub_win(window)
 # get_font_widths(window)
 
-
 window.show

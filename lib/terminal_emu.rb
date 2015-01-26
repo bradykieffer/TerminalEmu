@@ -19,8 +19,8 @@ module ZOrder
 end
 
 module CharData
-  FONT = "./resources/consola.ttf" # "./resources/cour.ttf" 
-                                   # Gosu::default_font_name
+  FONT = "./resources/consola.ttf" 
+
   FONT_SIZE = 18
 
   CHAR_WIDTH = 16
@@ -43,6 +43,7 @@ class Terminal < Gosu::Window
     @y = y * CharData::CHAR_HEIGHT
 
     super @x, @y, false
+
     self.caption = title
     
     # This will be used to track flashing characters :) 
@@ -276,14 +277,6 @@ class Terminal < Gosu::Window
   def update_terminal
     @time_for_updates += update_interval
     if time_for_updates > update_interval * CharData::UPDATE_TIME
-      # @glyphs.each do |glyph|
-      #   x = glyph.x
-      #   y = glyph.y
-      # 
-      #   # Flashing
-      #   # glyph.color.swap! if glyph.flashing?
-      # end
-
       @flashing_colors.each { |key, col| col.swap! }
       update_sub_wins
       @time_for_updates = 0
@@ -323,6 +316,25 @@ class Terminal < Gosu::Window
 
     # Foreground
     width_padding = (CharData::CHAR_WIDTH - @font.text_width(glyph.char)) / 2.0
-    @font.draw(glyph.char, x * width + width_padding, y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+    
+    # I'm so sorry
+    # This is a complete hack
+    # But I don't want to change it yet 
+    case glyph.font
+    when :bold
+      @font.draw(glyph.char, x * width + width_padding,       y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+      @font.draw(glyph.char, x * width + width_padding + 1.0, y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+    when :italic
+      rotate(10.0, x * width, y * height){ 
+        @font.draw(glyph.char, x * width + width_padding, y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+      }
+    when :bold_italic
+      rotate(10.0, x * width, y * height){ 
+        @font.draw(glyph.char, x * width + width_padding, y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+        @font.draw(glyph.char, x * width + width_padding + 0.5, y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+      }
+    else
+      @font.draw(glyph.char, x * width + width_padding, y * height, ZOrder::BACKGROUND, 1.0, 1.0, fore_col)
+    end
   end
 end
