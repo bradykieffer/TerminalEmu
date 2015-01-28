@@ -9,6 +9,7 @@
 #!/usr/bin/ruby -w
 
 require 'gosu'
+require './lib/character_data.rb'
 
 module ColorList
   YELLOW = 0xffffff00
@@ -36,8 +37,12 @@ class Color
     @background = background
   end
 
+  def equals(other_col)
+    @foreground == other_col.foreground && @background == other_col.background ? true : false
+  end
+
   # Returns a color with the foreground and background swapped
-  def get_inverse
+  def inverse
     Color.new(@background, @foreground)
   end
 
@@ -68,9 +73,6 @@ class Glyph
     set_attributes
   end
 
-  def top_line?
-    @top_line
-  end
 
   def bottom_line?
     @bottom_line
@@ -84,16 +86,24 @@ class Glyph
     @italic
   end
 
+  def center_x
+    pix_x_pos + (CharData::CHAR_WIDTH / 2.0)
+  end
+
+  def center_y
+    pix_y_pos + (CharData::CHAR_HEIGHT / 2.0)
+  end
+
+  def colors
+    return @color.foreground, @color.background
+  end
+
   def dim?
     @dim
   end
 
-  def right_line?
-    @right_line
-  end
-
-  def left_line?
-    @left_line
+  def dim_colors
+    return @color.foreground - CharData::DIM_CONSTANT, @color.background - CharData::DIM_CONSTANT
   end
 
   def flashing?
@@ -112,11 +122,35 @@ class Glyph
     end
   end
 
+  def left_line?
+    @left_line
+  end
+
+  def pix_x_pos
+    @point.x * CharData::CHAR_WIDTH
+  end
+
+  def pix_y_pos
+    @point.y * CharData::CHAR_HEIGHT
+  end
+
+  def right_line?
+    @right_line
+  end
+
   def swap_colors
     # If the glyph is flashing this will swap the colors
     @color = Color.new(@color.background, @color.foreground)
   end 
- 
+  
+  def top_line?
+    @top_line
+  end
+
+  def width_padding(font)
+    (CharData::CHAR_WIDTH - font.text_width(@char)) / 2.0
+  end
+
   def x
     @point.x
   end
@@ -149,6 +183,8 @@ class Glyph
       when :dim
         @dim = true
       else
+        # Just spit this to the terminal, it's annoying when the program crashes
+        # due to this error... So make a computer lag like hell instead :) 
         puts "Invalid attribute passed to a glyph object: #{ attribute }"
       end
     end

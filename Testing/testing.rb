@@ -19,13 +19,17 @@ def test_window(window)
   # Testing traits
   window.put_string(0, 0, "Flash",  Color.new, :flashing)
   window.put_string(0, 2, "Left",   Color.new, :left_line)
-  window.put_string(0, 4, "Right",  Color.new, :right_line)
+  window.put_string(0, 3, "Right",  Color.new, :right_line)
   window.put_string(0, 6, "Top",    Color.new, :top_line)
-  window.put_string(0, 6, "Bottom", Color.new, :bottom_line)
+  window.put_string(0, 7, "Bottom", Color.new, :bottom_line)
 
   window.put_string(0, 8, "Now let's test the lines together", col_yellow, :left_line, :right_line, :top_line, :bottom_line)  
 
   window.put_string(0, window.y - 1, "I don't even know why I'm doing this....", Color.new(ColorList::CYAN, ColorList::BLACK), :left_line, :right_line, :top_line, :bottom_line, :dim, :flashing)
+
+  window.put_string(6, 0, "Bold", Color.new, :bold)
+  window.put_string(6, 2, "Italic", Color.new, :italic)
+  window.put_string(6, 4, "Bold-Italic", Color.new, :bold_italic)
 end
 
 def dim_white_example
@@ -96,6 +100,6 @@ test_window(window)
 # dim_white_example(window)
 test_colors(window)
 test_sub_win(window)
+window.put_string(6, 6, "ALL THE TRAITS", Color.new(ColorList::BLACK, ColorList::BRIGHT_GREEN), :flashing, :bold_italic, :dim, :top_line, :left_line, :bottom_line, :right_line)
 # get_font_widths(window)
-
 window.show

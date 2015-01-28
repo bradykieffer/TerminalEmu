@@ -20,6 +20,7 @@ class SubTerminal
     
     @glyphs = Array.new
 
+    @outline = false
     parent.sub_wins << self
   end
 
@@ -31,8 +32,6 @@ class SubTerminal
     (@y1 - @y0) / CharData::CHAR_HEIGHT
   end
 
-  
-
   def in_bounds?(x, y)
     x <= (@x1 / CharData::CHAR_WIDTH)  && 
     x >= (@x0 / CharData::CHAR_WIDTH)  && 
@@ -42,10 +41,19 @@ class SubTerminal
 
   def draw
     parent.draw_glyphs(@glyphs)
-  end 
+    draw_outline if @outline == true
+  end
+
+  def draw_outline
+    parent.outline_box(x0, y0, x1, y1)
+  end
 
   def update
     @glyphs.each{ |glyph| glyph.swap_colors if glyph.flashing? == true }
+  end
+
+  def outline
+    @outline = true
   end
 
   def put_char(x, y, char, color = Color.new, *attributes)
