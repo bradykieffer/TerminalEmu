@@ -9,6 +9,7 @@ def test_sub_win(parent)
   sub_win = SubTerminal.new(parent, parent.x / 2, parent.y / 2, parent.x / 2 + 20, parent.y / 2 + 10)
   sub_win.put_char(0, 0, '#', col_yellow, :flashing, :dim)
   sub_win.put_string(0, 1, "I'm a sub terminal!", Color.new, :right_line, :left_line, :top_line, :bottom_line)
+  sub_win.outline
   # Uncomment the following line to raise an exception
   # sub_win.put_string(0, 1, "Hello!asdadasdasdasdsadasdasd", Color.new, :right_line, :left_line, :top_line, :bottom_line)
 end

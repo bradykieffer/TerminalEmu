@@ -26,7 +26,7 @@ class Terminal < Gosu::Window
     # Set up our font renderer
     @font = Gosu::Font.new(self, CharData::FONT, CharData::FONT_SIZE)
     @glyphs = Array.new
-
+    @boxes = Hash.new
     # This hash will track all of the drawn tiles and will overwrite 
     # any of the ones that have already been drawn on 
     @drawn_coords = Hash.new
@@ -44,7 +44,12 @@ class Terminal < Gosu::Window
   
   def draw
     draw_glyphs
+    draw_boxes
     draw_sub_wins
+  end
+
+  def draw_boxes
+    @boxes.each { |key, box| draw_box box unless box.nil? }
   end
 
   def draw_glyphs(sub_win_glyphs = nil)
@@ -95,6 +100,16 @@ class Terminal < Gosu::Window
     end 
   end
 
+  # Stages a box to be drawn next time the draw function is called 
+  # 
+  def outline_box(x0, y0, x1, y1, color = ColorList::WHITE)
+    if in_bounds?(x0, y0) && in_bounds?(x1, y1)
+      @boxes["#{ x0 }, #{ y0 }, #{ x1 }, #{ y1 }"] = Box.new(x0, y0, x1, y1, color)
+    else
+      raise ArgumentError, "Invalid x0/y0/x1/y1 given to outline_box. (x0, y0, x1, y1) = (#{ x0 },#{ y0 }, #{ x1 }, #{ y1 })"
+    end
+  end
+
   # Draws a string to the Terminal
   #
   def put_string(x, y, string, color = Color.new, *attributes)
@@ -124,8 +139,8 @@ class Terminal < Gosu::Window
   private
 
   def determine_line(glyph)
-    x = glyph.pix_x_pos
-    y = glyph.pix_y_pos
+    x = glyph.pix_x_pos - 1
+    y = glyph.pix_y_pos - 1
     
     if glyph.left_line?
       draw_line(x, y,                         ColorList::WHITE,
@@ -148,6 +163,25 @@ class Terminal < Gosu::Window
                 x + CharData::CHAR_WIDTH, y + CharData::CHAR_HEIGHT, ColorList::WHITE)
       # I think I found it.... Somewhere in here....
     end
+  end
+
+  def draw_box(box)
+    x0 = box.x0 * CharData::CHAR_WIDTH
+    x1 = box.x1 * CharData::CHAR_WIDTH
+    y0 = box.y0 * CharData::CHAR_HEIGHT
+    y1 = box.y1 * CharData::CHAR_HEIGHT
+    color = box.color
+    # Top line
+    draw_line(x0, y0, color, x1, y0, color)
+
+    # Bottom
+    draw_line(x0, y1, color, x1, y1, color)
+
+    # Left
+    draw_line(x0, y0, color, x0, y1, color)
+
+    # Right
+    draw_line(x1, y0, color, x1, y1, color)
   end
 
   def draw_character(x, y, color, glyph)
@@ -188,6 +222,7 @@ class Terminal < Gosu::Window
   # 
   # => If the flashing flag is enabled the glyphs' colors will be inverted to give it a flashing effect
   # => If there are any sub windows under this terminal, their update methods are called
+  #
   def update_terminal
     @time_for_updates += update_interval
     if time_for_updates > update_interval * CharData::UPDATE_TIME

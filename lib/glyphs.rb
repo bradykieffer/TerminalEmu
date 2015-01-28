@@ -57,6 +57,9 @@ end
 class Point < Struct.new(:x, :y)
 end
 
+class Box < Struct.new(:x0, :y0, :x1, :y1, :color)
+end
+
 class Glyph
   attr_reader :attributes, :char, :color
   def initialize(point, char, color = Color.new, *attributes)
