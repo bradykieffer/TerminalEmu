@@ -57,16 +57,13 @@ end
 class Point < Struct.new(:x, :y)
 end
 
-class Box < Struct.new(:x0, :y0, :x1, :y1, :color)
-end
-
 class Glyph
   attr_reader :attributes, :char, :color
   def initialize(point, char, color = Color.new, *attributes)
     @point = point
     @char = char
 
-    @color = color
+    @color = Color.new(color.foreground, color.background)
     
     @attributes = attributes
     # Set these all to false initially
@@ -75,7 +72,6 @@ class Glyph
     # Now set all of the glyphs' attributes
     set_attributes
   end
-
 
   def bottom_line?
     @bottom_line
@@ -129,6 +125,10 @@ class Glyph
     @left_line
   end
 
+  def on_update
+    
+  end
+
   def pix_x_pos
     @point.x * CharData::CHAR_WIDTH
   end
@@ -143,7 +143,7 @@ class Glyph
 
   def swap_colors
     # If the glyph is flashing this will swap the colors
-    @color = Color.new(@color.background, @color.foreground)
+    @color = @color.inverse
   end 
   
   def top_line?

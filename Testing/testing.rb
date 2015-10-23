@@ -102,5 +102,10 @@ test_window(window)
 test_colors(window)
 test_sub_win(window)
 window.put_string(6, 6, "ALL THE TRAITS", Color.new(ColorList::BLACK, ColorList::BRIGHT_GREEN), :flashing, :bold_italic, :dim, :top_line, :left_line, :bottom_line, :right_line)
+
+tst = Color.new(ColorList::BLACK, ColorList::BRIGHT_GREEN)
+
+window.put_string(6, 6, "ALL THE TRAITS", tst, :flashing)
+window.put_string(6, 7, "ALL THE TRAITS", tst)
 # get_font_widths(window)
 window.show

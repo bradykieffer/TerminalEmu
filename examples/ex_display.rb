@@ -5,8 +5,9 @@ require './lib/terminal_emu.rb'
 
 terminal = Terminal.new(80, 25, "Example Terminal")
 
+test = Color.new(ColorList::YELLOW, ColorList::BLACK)
+
 terminal.put_string(0, 0, "This is an example terminal!", Color.new(ColorList::BRIGHT_GREEN, ColorList::BLACK))
-terminal.outline_box(0, 0, "This is an example terminal!".length, 1, ColorList::BLUE)
 
 sub_terminal = SubTerminal.new(terminal, 4, 3, terminal.x - 2, terminal.y - 10)
 sub_terminal.put_string(0, 0, "I'm a sub-terminal!", Color.new, :bottom_line)
@@ -27,9 +28,9 @@ sub_terminal.put_string(10, 5, "FLASHING", Color.new(ColorList::YELLOW, ColorLis
 sub_terminal.put_char(10, 6, '&')
 
 sub_terminal.put_string(0, 7,"These traits: bold, italic, dim, lines (bottom, top, left, right)")
-sub_terminal.outline
 
-terminal.outline_box(1, terminal.y - 9, terminal.x - 1, terminal.y - 1, ColorList::BRIGHT_GREEN)
-terminal.put_string(2, terminal.y - 8, "I can also draw boxes like this one!")
+terminal.put_string(0,0, "THIS IS ALL A TEST", test, :flashing)
+terminal.put_string(0,1, "THIS IS ALL A TEST 2", test)
+
 
 terminal.show

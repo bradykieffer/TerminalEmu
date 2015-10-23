@@ -20,7 +20,6 @@ class SubTerminal
     
     @glyphs = Array.new
 
-    @outline = false
     parent.sub_wins << self
   end
 
@@ -41,11 +40,6 @@ class SubTerminal
 
   def draw
     parent.draw_glyphs(@glyphs)
-    draw_outline if @outline == true
-  end
-
-  def draw_outline
-    parent.outline_box(x0, y0, x1, y1)
   end
 
   def update

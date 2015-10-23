@@ -26,39 +26,29 @@ class Terminal < Gosu::Window
     # Set up our font renderer
     @font = Gosu::Font.new(self, CharData::FONT, CharData::FONT_SIZE)
     @glyphs = Array.new
-    @boxes = Hash.new
+
     # This hash will track all of the drawn tiles and will overwrite 
     # any of the ones that have already been drawn on 
     @drawn_coords = Hash.new
-
-    # This array is used to track our flashing colors, so that we can keep them updating consistently
-    @flashing_colors = Array.new
 
     # The subwindows within our Terminal
     @sub_wins = Array.new
 
     @input = Gosu::TextInput.new
     self.text_input = @input
-
+    
   end
   
   def draw
     draw_glyphs
-    draw_boxes
     draw_sub_wins
-  end
-
-  def draw_boxes
-    @boxes.each { |key, box| draw_box box unless box.nil? }
   end
 
   def draw_glyphs(sub_win_glyphs = nil)
     if sub_win_glyphs.nil? == true
       @glyphs.each do |glyph|
         next if glyph.nil?
-
         write_glyph glyph
-
         # Drawing lines
         determine_line(glyph)
       end
@@ -99,17 +89,7 @@ class Terminal < Gosu::Window
       raise ArgumentError, "Invalid x and/or y given to put_char. (x,y) = (#{ x },#{ y })"
     end 
   end
-
-  # Stages a box to be drawn next time the draw function is called 
-  # 
-  def outline_box(x0, y0, x1, y1, color = ColorList::WHITE)
-    if in_bounds?(x0, y0) && in_bounds?(x1, y1)
-      @boxes["#{ x0 }, #{ y0 }, #{ x1 }, #{ y1 }"] = Box.new(x0, y0, x1, y1, color)
-    else
-      raise ArgumentError, "Invalid x0/y0/x1/y1 given to outline_box. (x0, y0, x1, y1) = (#{ x0 },#{ y0 }, #{ x1 }, #{ y1 })"
-    end
-  end
-
+  
   # Draws a string to the Terminal
   #
   def put_string(x, y, string, color = Color.new, *attributes)
@@ -119,6 +99,10 @@ class Terminal < Gosu::Window
       raise ArgumentError, "Invalid x and/or y given to put_string. (x,y) = (#{ x },#{ y })"
     end
   end
+
+  # Starts the terminal, takes a proc to insert into our update function...
+  #
+
 
   # The loop that will be run when Terminal.show is called
   #
@@ -165,25 +149,6 @@ class Terminal < Gosu::Window
     end
   end
 
-  def draw_box(box)
-    x0 = box.x0 * CharData::CHAR_WIDTH
-    x1 = box.x1 * CharData::CHAR_WIDTH
-    y0 = box.y0 * CharData::CHAR_HEIGHT
-    y1 = box.y1 * CharData::CHAR_HEIGHT
-    color = box.color
-    # Top line
-    draw_line(x0, y0, color, x1, y0, color)
-
-    # Bottom
-    draw_line(x0, y1, color, x1, y1, color)
-
-    # Left
-    draw_line(x0, y0, color, x0, y1, color)
-
-    # Right
-    draw_line(x1, y0, color, x1, y1, color)
-  end
-
   def draw_character(x, y, color, glyph)
     # I'm so sorry
     # This is a complete hack
@@ -213,8 +178,6 @@ class Terminal < Gosu::Window
       @drawn_coords["#{ x }, #{ y }"] = @glyphs.length
       @glyphs << Glyph.new(Point.new(x, y), char, color, *attributes)
     end
-
-    @flashing_colors << color << color.inverse if attributes.include?(:flashing) && !@flashing_colors.include?(color) && !@flashing_colors.include?(color.inverse)
   end
 
   # Updates all of the current glyphs within the terminal
@@ -226,7 +189,10 @@ class Terminal < Gosu::Window
   def update_terminal
     @time_for_updates += update_interval
     if time_for_updates > update_interval * CharData::UPDATE_TIME
-      @flashing_colors.each { |col| col.swap! }
+      @glyphs.each do |glyph|
+        next if glyph.nil?
+        glyph.swap_colors if glyph.flashing?
+      end
       update_sub_wins
       @time_for_updates = 0
     end
@@ -260,4 +226,3 @@ class Terminal < Gosu::Window
     draw_character(x + width_padding, y, fore_col, glyph)
   end
 end
-# _______________________
