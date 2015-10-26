@@ -1,7 +1,7 @@
 # Stores various constants related to the actual characters
 
 module CharData
-  FONT = "./resources/consola.ttf" 
+  FONT = "././resources/consola.ttf" 
 
   FONT_SIZE = 18
 

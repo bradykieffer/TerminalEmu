@@ -3,9 +3,9 @@
 #!/usr/bin/ruby -w
 require 'rubygems'
 require 'gosu'
-require './lib/glyphs.rb'
-require './lib/sub_terminal.rb'
-require './lib/character_data.rb'
+require './lib/terminalemu/glyphs.rb'
+require './lib/terminalemu/sub_terminal.rb'
+require './lib/terminalemu/character_data.rb'
 class Terminal < Gosu::Window
 
   attr_reader  :font, :input, :time_for_updates

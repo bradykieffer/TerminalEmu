@@ -1,7 +1,7 @@
 # Just a simple example of the terminal in its current state 
 
 #!/usr/bin/ruby -w
-require './lib/terminal_emu.rb'
+require './lib/terminalemu.rb'
 
 terminal = Terminal.new(80, 25, "Example Terminal")
 

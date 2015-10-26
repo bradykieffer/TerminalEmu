@@ -9,8 +9,8 @@
 #!/usr/bin/ruby -w
 
 require 'gosu'
-require './lib/character_data.rb'
-require './lib/colors.rb'
+require './lib/terminalemu/character_data.rb'
+require './lib/terminalemu/colors.rb'
 
 
 class Point < Struct.new(:x, :y)
@@ -91,7 +91,7 @@ class Glyph
     end
   end
 
-  def rotating
+  def rotate
     if @angle != 360
       @angle += 5 
     else

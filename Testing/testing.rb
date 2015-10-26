@@ -1,7 +1,7 @@
 
 #!/usr/bin/ruby -w
 
-require './lib/terminal_emu.rb'
+require './lib/terminalemu.rb'
 
 def test_sub_win(parent)
   col_yellow = Color.new(ColorList::YELLOW)
