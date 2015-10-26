@@ -15,6 +15,6 @@ class Tile
 end
 
 module TileIndex
-  FLOOR = Tile.new('.', Color.new(ColorList::BROWN, ColorList::BLACK), :dim)
+  FLOOR = Tile.new('.', Color.new(ColorList::BROWN, ColorList::BLACK))
   WALL =  Tile.new('#', Color.new(ColorList::GRAY, ColorList::BLACK))
 end

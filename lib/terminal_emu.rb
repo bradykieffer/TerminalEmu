@@ -100,8 +100,18 @@ class Terminal < Gosu::Window
     end
   end
 
-  # Starts the terminal, takes a proc to insert into our update function...
-  #
+  def put_circle(x, y, r = 1, color = Color.new, *attributes)
+
+    if in_bounds?(x, y) && in_bounds?(x + r, y) && in_bounds?(x - r, y) && in_bounds?(x, y + r) && in_bounds?(x, y - r) 
+      (x-r..x+r).each do |xo|
+        (y-r..y+r).each do |yo|
+          push_char(xo, yo, ' ', color, *attributes) unless (xo - x)**2 + (yo - y)**2 > r**2
+        end
+      end
+    else
+      raise ArgumentError, "Invalid x and/or y given to put_string. (x,y) = (#{ x },#{ y })"
+    end
+  end
 
 
   # The loop that will be run when Terminal.show is called
@@ -123,75 +133,59 @@ class Terminal < Gosu::Window
   private
 
   def determine_line(glyph)
-    x = glyph.pix_x_pos - 1
-    y = glyph.pix_y_pos - 1
+    x = glyph.pix_x_pos
+    y = glyph.pix_y_pos
     
     if glyph.left_line?
-      draw_line(x, y,                         ColorList::WHITE,
-                x, y + CharData::CHAR_HEIGHT, ColorList::WHITE)
+      draw_line(x + 1, y + 1,                         ColorList::WHITE,
+                x + 1, y + CharData::CHAR_HEIGHT - 1, ColorList::WHITE)
     end
 
     if glyph.right_line?
-      draw_line(x + CharData::CHAR_WIDTH, y,                         ColorList::WHITE, 
-                x + CharData::CHAR_WIDTH, y + CharData::CHAR_HEIGHT, ColorList::WHITE)
+      draw_line(x + CharData::CHAR_WIDTH - 1, y + 1,                         ColorList::WHITE, 
+                x + CharData::CHAR_WIDTH - 1, y + CharData::CHAR_HEIGHT - 1, ColorList::WHITE)
     end
 
     if glyph.top_line?
-      draw_line(x,                        y, ColorList::WHITE, 
-                x + CharData::CHAR_WIDTH, y, ColorList::WHITE)
+      draw_line(x + 1,                        y + 1, ColorList::WHITE, 
+                x + CharData::CHAR_WIDTH - 1, y + 1, ColorList::WHITE)
     end
 
     # But seriously wtf is the bottom line here??!?!??!!?
     if glyph.bottom_line?
-      draw_line(x,                        y + CharData::CHAR_HEIGHT, ColorList::WHITE,
-                x + CharData::CHAR_WIDTH, y + CharData::CHAR_HEIGHT, ColorList::WHITE)
+      draw_line(x + 1,                        y + CharData::CHAR_HEIGHT - 1, ColorList::WHITE,
+                x + CharData::CHAR_WIDTH - 1, y + CharData::CHAR_HEIGHT - 1, ColorList::WHITE)
       # I think I found it.... Somewhere in here....
     end
   end
 
   def draw_character(x, y, color, glyph)
-    # I'm so sorry
-    # This is a complete hack
-    # But I don't want to change it yet 
-    case glyph.font
-    when :bold
-      @font.draw(glyph.char, x,       y, 0, 1.0, 1.0, color)
-      @font.draw(glyph.char, x + 1.0, y, 0, 1.0, 1.0, color)
-    when :italic
-      rotate(10.0, glyph.center_x, glyph.center_y){ 
-        @font.draw(glyph.char, x, y, 0, 1.0, 1.0, color)
-      }
-    when :bold_italic
-      rotate(10.0, glyph.center_x, glyph.center_y){ 
-        @font.draw(glyph.char, x, y, 0, 1.0, 1.0, color)
-        @font.draw(glyph.char, x + 0.5, y, 0, 1.0, 1.0, color)
-      }
-    else
-      @font.draw(glyph.char, x, y, 0, 1.0, 1.0, color)
-    end
+    scale(glyph.scale, glyph.scale, glyph.center_x, glyph.center_y){
+      rotate(glyph.angle, glyph.center_x, glyph.center_y){ @font.draw(glyph.char, x, y, 0, 1.0, 1.0, color) }
+    }
   end
  
   def push_char(x, y, char, color, *attributes)
     if @drawn_coords["#{ x }, #{ y }"] != nil
-      @glyphs[@drawn_coords["#{ x }, #{ y }"]] = Glyph.new(Point.new(x, y), char, color, *attributes)
+      @glyphs[@drawn_coords["#{ x }, #{ y }"]] = Glyph.new(x, y, char, color, *attributes)
     else
       @drawn_coords["#{ x }, #{ y }"] = @glyphs.length
-      @glyphs << Glyph.new(Point.new(x, y), char, color, *attributes)
+      @glyphs << Glyph.new(x, y, char, color, *attributes)
     end
   end
 
   # Updates all of the current glyphs within the terminal
   # Note that this only occurs roughly every second
   # 
-  # => If the flashing flag is enabled the glyphs' colors will be inverted to give it a flashing effect
-  # => If there are any sub windows under this terminal, their update methods are called
+  # => Calls the on update method for each glyph, this will update it based on its' attributes
   #
   def update_terminal
     @time_for_updates += update_interval
     if time_for_updates > update_interval * CharData::UPDATE_TIME
       @glyphs.each do |glyph|
         next if glyph.nil?
-        glyph.swap_colors if glyph.flashing?
+
+        glyph.on_update(@time_for_updates)
       end
       update_sub_wins
       @time_for_updates = 0
@@ -210,7 +204,7 @@ class Terminal < Gosu::Window
     y = glyph.pix_y_pos
     width_padding = glyph.width_padding(@font)
     
-    fore_col, back_col = glyph.dim? ? glyph.dim_colors : glyph.colors
+    fore_col, back_col = glyph.colors
     # Background
     # Images are drawn in this order when calling draw_quad:
     # 1-----2
@@ -221,7 +215,7 @@ class Terminal < Gosu::Window
               x + CharData::CHAR_WIDTH, y,                         back_col, # Second corner
               x,                        y + CharData::CHAR_HEIGHT, back_col, # Third corner
               x + CharData::CHAR_WIDTH, y + CharData::CHAR_HEIGHT, back_col) # Fourth Corner
-
+    
     # Now draw the font
     draw_character(x + width_padding, y, fore_col, glyph)
   end

@@ -10,67 +10,37 @@
 
 require 'gosu'
 require './lib/character_data.rb'
+require './lib/colors.rb'
 
-module ColorList
-  YELLOW = 0xffffff00
-  BROWN  = 0xffbb9900 
-
-  GREEN        = 0xaa00ff00
-  BRIGHT_GREEN = 0xff00ff00
-
-  BLUE = 0xff00aaff
-  CYAN = 0xff00ffff
-
-  RED    = 0xffff0000
-  ORANGE = 0xffff9900
-
-
-  BLACK = 0xff000000 
-  GRAY  = 0xffaaaaaa 
-  WHITE = 0xffffffff
-end
-
-class Color
-  attr_accessor :foreground, :background 
-  def initialize(foreground = ColorList::WHITE, background = ColorList::BLACK)
-    @foreground = foreground
-    @background = background
-  end
-
-  def equals(other_col)
-    @foreground == other_col.foreground && @background == other_col.background ? true : false
-  end
-
-  # Returns a color with the foreground and background swapped
-  def inverse
-    Color.new(@background, @foreground)
-  end
-
-  def swap!
-    tmp = @foreground
-    @foreground = @background
-    @background = tmp
-    self
-  end
-end
 
 class Point < Struct.new(:x, :y)
 end
 
 class Glyph
-  attr_reader :attributes, :char, :color
-  def initialize(point, char, color = Color.new, *attributes)
-    @point = point
+  attr_reader :attributes, :char, :color, :angle, :scale
+  def initialize(x, y, char, color = Color.new, *attributes)
+    @x = x
+    @y = y
     @char = char
 
     @color = Color.new(color.foreground, color.background)
     
     @attributes = attributes
-    # Set these all to false initially
-    @flashing = @left_line =  @right_line = @top_line = @bottom_line = @bold = @italic = @dim = false
+    @updated_last = Hash.new
 
-    # Now set all of the glyphs' attributes
-    set_attributes
+    @angle = 0
+    @scale = 1.0
+    @growing = true
+
+    # Set these all to false initially
+    @left_line =  @right_line = @top_line = @bottom_line = false
+
+    @col_fore_orig = @color.foreground
+    @col_back_orig= @color.background
+
+    # Now set the lines for the glyph, this is sorta a hack
+    manip_attributes
+
   end
 
   def bottom_line?
@@ -97,16 +67,16 @@ class Glyph
     return @color.foreground, @color.background
   end
 
-  def dim?
-    @dim
+  def dim
+    @color.dim!
   end
 
-  def dim_colors
-    return @color.foreground - CharData::DIM_CONSTANT, @color.background - CharData::DIM_CONSTANT
-  end
-
-  def flashing?
-    @flashing
+  def flashing(last_update)
+    @updated_last[:flashing].nil? ? @updated_last[:flashing] = 0 : @updated_last[:flashing] += last_update
+    if @updated_last[:flashing] >= CharData::FLASH_LAG
+      @color.swap! 
+      @updated_last[:flashing] = 0
+    end
   end
 
   def font
@@ -121,31 +91,65 @@ class Glyph
     end
   end
 
+  def rotating
+    if @angle != 360
+      @angle += 5 
+    else
+      @angle = 5
+    end
+  end
+
   def left_line?
     @left_line
   end
 
-  def on_update
-    
+  def on_update(last_update = 0)
+    @attributes.each do |attribute|
+      if self.respond_to?(attribute)
+        self.method(attribute).arity > 0 ? self.send(attribute, last_update) : self.send(attribute)
+      else
+        puts "Warning, invalid attribute passed to glyph: #{ attribute }"
+      end 
+    end
+  end
+
+  def pulse(last_update)
+    @updated_last[:pulse].nil? ? @updated_last[:pulse] = 0 : @updated_last[:pulse] += last_update
+    if @updated_last[:pulse] >= CharData::SCALE_LAG
+      @growing = !@growing if @scale > CharData::SCALE_MAX || @scale < CharData::SCALE_MIN
+      @growing == true ? @scale += CharData::SCALE_INCREMENT : @scale -= CharData::SCALE_INCREMENT 
+      @updated_last[:pulse] = 0
+    end
+  end
+
+  def left_line
+    @left_line = true
+  end
+
+  def right_line
+    @right_line = true
+  end
+
+  def top_line
+    @top_line = true
+  end
+
+  def bottom_line
+    @bottom_line = true
   end
 
   def pix_x_pos
-    @point.x * CharData::CHAR_WIDTH
+    @x * CharData::CHAR_WIDTH
   end
 
   def pix_y_pos
-    @point.y * CharData::CHAR_HEIGHT
+    @y * CharData::CHAR_HEIGHT
   end
 
   def right_line?
     @right_line
   end
 
-  def swap_colors
-    # If the glyph is flashing this will swap the colors
-    @color = @color.inverse
-  end 
-  
   def top_line?
     @top_line
   end
@@ -155,41 +159,34 @@ class Glyph
   end
 
   def x
-    @point.x
+    @x
   end
 
   def y 
-    @point.y
+    @y
   end
 
   private
-  def set_attributes
+  def manip_attributes
     @attributes.each do |attribute|
-      case attribute
-      when :flashing
-        @flashing = true
-      when :left_line
-        @left_line = true
-      when :right_line
-        @right_line = true
-      when :top_line
-        @top_line = true
-      when :bottom_line
-        @bottom_line = true
-      when :bold
-        @bold = true
-      when :italic
-        @italic = true
-      when :bold_italic
-          @bold = true
-          @italic = true
-      when :dim
-        @dim = true
-      else
-        # Just spit this to the terminal, it's annoying when the program crashes
-        # due to this error... So make a computer lag like hell instead :) 
-        puts "Invalid attribute passed to a glyph object: #{ attribute }"
-      end
+      # set_attr_hash(attribute)
+      set_lines(attribute)
     end
+  end
+  def set_lines(attribute)
+    case attribute
+    when :left_line
+      @left_line = true
+    when :right_line
+      @right_line = true
+    when :top_line
+      @top_line = true
+    when :bottom_line
+      @bottom_line = true
+    end
+  end
+
+  def set_attr_hash(attribute)
+    @updated_last[':#{ attribute }'] = 0
   end
 end

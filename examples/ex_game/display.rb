@@ -15,11 +15,7 @@ module Display
         wi = i + left      
         wj = j + top
 
-        if world[wi][wj].char == "#" && rand(100) < 50
-          window.put_char(i, j, world[wi][wj].char, world[wi][wj].color, *world[wi][wj].attributes, :flashing)
-        else
-          window.put_char(i, j, world[wi][wj].char, world[wi][wj].color, *world[wi][wj].attributes)
-        end
+        window.put_char(i, j, world[wi][wj].char, world[wi][wj].color, *world[wi][wj].attributes)
       end
     end
     

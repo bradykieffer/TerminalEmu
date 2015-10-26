@@ -26,7 +26,7 @@ def test_window(window)
 
   window.put_string(0, 8, "Now let's test the lines together", col_yellow, :left_line, :right_line, :top_line, :bottom_line)  
 
-  window.put_string(0, window.y - 1, "I don't even know why I'm doing this....", Color.new(ColorList::CYAN, ColorList::BLACK), :left_line, :right_line, :top_line, :bottom_line, :dim, :flashing)
+  window.put_string(0, window.y - 1, "I don't even know why I'm doing this....", Color.new(ColorList::CYAN, ColorList::BLACK), :dim,:flashing)
 
   window.put_string(6, 0, "Bold", Color.new, :bold)
   window.put_string(6, 2, "Italic", Color.new, :italic)
@@ -97,15 +97,22 @@ end
 
 window = Terminal.new(80, 50, "Test")
 
-test_window(window)
+# test_window(window)
 # dim_white_example(window)
-test_colors(window)
-test_sub_win(window)
-window.put_string(6, 6, "ALL THE TRAITS", Color.new(ColorList::BLACK, ColorList::BRIGHT_GREEN), :flashing, :bold_italic, :dim, :top_line, :left_line, :bottom_line, :right_line)
+# test_colors(window)
+# test_sub_win(window)
+window.put_string(6, 6, "ALL THE TRAITS", Color.new(ColorList::WHITE, ColorList::BLACK), :flashing, :dim, :top_line, :left_line, :bottom_line, :right_line, :pulse, :rotating)
 
-tst = Color.new(ColorList::BLACK, ColorList::BRIGHT_GREEN)
 
-window.put_string(6, 6, "ALL THE TRAITS", tst, :flashing)
-window.put_string(6, 7, "ALL THE TRAITS", tst)
+
+# window.put_char(0, 0, 'X', Color.new(ColorList::BLACK, ColorList::WHITE), :rotating)
+
+window.put_circle(12, 12, 5, Color.new(ColorList::WHITE, ColorList::GRAY), :flashing, :dim)
+window.put_char(12, 12, 'X', Color.new(ColorList::GRAY, ColorList::WHITE), :flashing, :dim)
+
+window.put_char(1, 1, 'X', Color.new, :flashing)
+window.put_char(0, 0, 'X', Color.new, :flashing)
+
+# window.put_string(6, 7, "ALL THE TRAITS", tst)
 # get_font_widths(window)
 window.show
