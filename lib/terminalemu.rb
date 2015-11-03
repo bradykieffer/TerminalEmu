@@ -8,17 +8,18 @@ require './lib/terminalemu/sub_terminal.rb'
 require './lib/terminalemu/character_data.rb'
 class Terminal < Gosu::Window
 
-  attr_reader  :font, :input, :time_for_updates
+  attr_reader  :font, :input, :time_for_updates, :title, :width, :height, :glyphs
   attr_accessor :sub_wins
   
-  def initialize(x, y, title)
+  def initialize(x, y, title = "", logic_class = nil, *methods_to_call)
     # The magic numbers for x & y make it look best on my machine, you may have to change this  
-    @x = x * CharData::CHAR_WIDTH
-    @y = y * CharData::CHAR_HEIGHT
+    
+    # Validate and set the dimensions for the terminal first
+    set_terminal_dimensions(x, y) 
 
     super @x, @y, false
 
-    self.caption = title
+    self.caption = @title = title.to_s
     
     # This will be used to track flashing characters :) 
     @time_for_updates = 0
@@ -36,7 +37,6 @@ class Terminal < Gosu::Window
 
     @input = Gosu::TextInput.new
     self.text_input = @input
-    
   end
   
   def draw
@@ -66,12 +66,13 @@ class Terminal < Gosu::Window
 
   # Returns a glyph at a given coordinate on the screen
   #
-  def glyph_at(x, y)
-    @glyphs[@drawn_coords["#{ x }, #{ y }"]]
+  def get_glyph_at(x, y)
+    raise ArgumentError if !in_bounds? x, y
+    @drawn_coords["#{ x }, #{ y }"].nil? ? nil : @glyphs[@drawn_coords["#{ x }, #{ y }"]]
   end
 
   def in_bounds?(x, y)
-    x < self.x && x >= 0 && y < self.y && y >= 0 ? true : false
+    x.nil? || y.nil? || (x < self.x && x >= 0 && y < self.y && y >= 0) ? true : false
   end
 
   # Enables the cursor to be visible within the terminal.
@@ -84,17 +85,25 @@ class Terminal < Gosu::Window
   #
   def put_char(x, y, char, color = Color.new, *attributes)
     if in_bounds? x, y
-        push_char(x, y, char, color, *attributes)
+        push_char(Glyph.new(x, y, char, color, *attributes))
     else
       raise ArgumentError, "Invalid x and/or y given to put_char. (x,y) = (#{ x },#{ y })"
     end 
+  end
+
+  def put_glyph(glyph)
+    if in_bounds?(glyph.x, glyph.y) && glyph.nil? == false
+      push_char(glyph)
+    else
+      raise ArgumentError, "Invalid glyph given to put_glyph. Glyph = #{ glyph }"
+    end
   end
   
   # Draws a string to the Terminal
   #
   def put_string(x, y, string, color = Color.new, *attributes)
-    if in_bounds?(x, y) && in_bounds?(x + string.length, y)
-      (0...string.length).each { |i| push_char(x + i, y, string[i], color, *attributes) }
+    if x.nil? == false && in_bounds?(x, y) && in_bounds?(x + string.length, y)
+      (0...string.length).each { |i| push_char(Glyph.new(x + i, y, string[i], color, *attributes)) }
     else
       raise ArgumentError, "Invalid x and/or y given to put_string. (x,y) = (#{ x },#{ y })"
     end
@@ -105,7 +114,7 @@ class Terminal < Gosu::Window
     if in_bounds?(x, y) && in_bounds?(x + r, y) && in_bounds?(x - r, y) && in_bounds?(x, y + r) && in_bounds?(x, y - r) 
       (x-r..x+r).each do |xo|
         (y-r..y+r).each do |yo|
-          push_char(xo, yo, ' ', color, *attributes) unless (xo - x)**2 + (yo - y)**2 > r**2
+          push_char(Glyph.new(xo, yo, ' ', color, *attributes)) unless (xo - x)**2 + (yo - y)**2 > r**2
         end
       end
     else
@@ -113,10 +122,26 @@ class Terminal < Gosu::Window
     end
   end
 
+  # Sets a class that will call logic before an update
+  #
+  def set_logic_class(logic_class, *methods_to_call)
+    @logic_class = logic_class
+    @methods_to_call = methods_to_call
+  end
 
   # The loop that will be run when Terminal.show is called
   #
   def update
+    if @logic_class.nil? == false
+      @methods_to_call.each do |method|
+        next if method.nil? 
+        if @logic_class.respond_to?(method)
+          @logic_class.send(method)
+        else 
+          puts "Warning Invalid method called on #{ @logic_class.class }, method: #{ method }"
+        end
+      end
+    end
     update_terminal
   end
 
@@ -165,13 +190,28 @@ class Terminal < Gosu::Window
     }
   end
  
-  def push_char(x, y, char, color, *attributes)
-    if @drawn_coords["#{ x }, #{ y }"] != nil
-      @glyphs[@drawn_coords["#{ x }, #{ y }"]] = Glyph.new(x, y, char, color, *attributes)
+  def push_char(glyph)
+    if @drawn_coords["#{ glyph.x }, #{ glyph.y }"] != nil
+      @glyphs[@drawn_coords["#{ glyph.x }, #{ glyph.y }"]] = glyph
     else
-      @drawn_coords["#{ x }, #{ y }"] = @glyphs.length
-      @glyphs << Glyph.new(x, y, char, color, *attributes)
+      @drawn_coords["#{ glyph.x }, #{ glyph.y }"] = @glyphs.length
+      @glyphs << glyph
     end
+  end
+
+  def set_terminal_dimensions(x, y)
+    # If dimensions that are 0 or negative are passed raise an argument error
+    if x <= 0 || y <= 0
+      raise ArgumentError, "Invalid (x,y) when creating new Terminal instance (x,y) = (#{ x },#{ y })" 
+    else
+
+    end
+
+    @x = x * CharData::CHAR_WIDTH
+    @y = y * CharData::CHAR_HEIGHT 
+
+    @width = x
+    @height = y 
   end
 
   # Updates all of the current glyphs within the terminal
